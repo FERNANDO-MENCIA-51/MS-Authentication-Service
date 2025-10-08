@@ -1,8 +1,6 @@
 package edu.pe.vallegrande.AuthenticationService.service;
 
 import io.jsonwebtoken.Claims;
-import reactor.core.publisher.Mono;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -22,32 +20,32 @@ public interface JwtService {
     String generateRefreshToken(UUID userId, String username);
     
     /**
-     * Validar token
+     * Validar token (síncrono para filtros)
      */
-    Mono<Boolean> validateToken(String token);
+    boolean validateToken(String token);
     
     /**
-     * Extraer claims del token
+     * Extraer claims del token (síncrono)
      */
-    Mono<Claims> extractClaims(String token);
+    Claims extractClaims(String token);
     
     /**
-     * Extraer username del token
+     * Extraer username del token (síncrono)
      */
-    Mono<String> extractUsername(String token);
+    String extractUsername(String token);
     
     /**
-     * Extraer user ID del token
+     * Extraer user ID del token (síncrono)
      */
-    Mono<UUID> extractUserId(String token);
+    UUID extractUserId(String token);
     
     /**
-     * Extraer roles del token
+     * Extraer roles del token (síncrono)
      */
-    Mono<List<String>> extractRoles(String token);
+    List<String> extractRoles(String token);
     
     /**
-     * Verificar si el token ha expirado
+     * Verificar si el token ha expirado (síncrono)
      */
-    Mono<Boolean> isTokenExpired(String token);
+    boolean isTokenExpired(String token);
 }

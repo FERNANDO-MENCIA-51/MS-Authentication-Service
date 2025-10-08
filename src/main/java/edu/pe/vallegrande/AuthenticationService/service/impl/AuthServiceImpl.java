@@ -30,6 +30,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     // Set para almacenar tokens invalidados (en producción usar Redis)
     private final Set<String> blacklistedTokens = new HashSet<>();
@@ -80,20 +81,23 @@ public class AuthServiceImpl implements AuthService {
     public Mono<TokenResponseDto> refreshToken(RefreshTokenRequestDto refreshRequest) {
         log.info("Renovando token");
 
-        return jwtService.validateToken(refreshRequest.getRefreshToken())
-                .flatMap(isValid -> {
-                    if (!isValid) {
-                        return Mono.error(new RuntimeException("Refresh token inválido"));
-                    }
+        // Validar token de forma síncrona
+        if (!jwtService.validateToken(refreshRequest.getRefreshToken())) {
+            return Mono.error(new RuntimeException("Refresh token inválido"));
+        }
 
-                    // Verificar que no esté en blacklist
-                    if (blacklistedTokens.contains(refreshRequest.getRefreshToken())) {
-                        return Mono.error(new RuntimeException("Token invalidado"));
-                    }
+        // Verificar que no esté en blacklist
+        if (blacklistedTokens.contains(refreshRequest.getRefreshToken())) {
+            return Mono.error(new RuntimeException("Token invalidado"));
+        }
 
-                    return jwtService.extractUsername(refreshRequest.getRefreshToken());
-                })
-                .flatMap(username -> userRepository.findByUsername(username))
+        // Extraer username del token
+        String username = jwtService.extractUsername(refreshRequest.getRefreshToken());
+        if (username == null) {
+            return Mono.error(new RuntimeException("No se pudo extraer username del token"));
+        }
+
+        return userRepository.findByUsername(username)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Usuario no encontrado")))
                 .flatMap(user -> {
                     // Validar que el usuario siga activo
@@ -126,7 +130,8 @@ public class AuthServiceImpl implements AuthService {
             return Mono.just(false);
         }
 
-        return jwtService.validateToken(token);
+        // Validar token de forma síncrona y envolver en Mono
+        return Mono.just(jwtService.validateToken(token));
     }
 
     /**
@@ -173,10 +178,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Validar password (implementación temporal)
+     * Validar password usando BCrypt
      */
     private boolean validatePassword(String rawPassword, String hashedPassword) {
-        // Implementación temporal - en producción usar PasswordEncoder
-        return ("hashed_" + rawPassword).equals(hashedPassword);
+        return passwordEncoder.matches(rawPassword, hashedPassword);
     }
 }

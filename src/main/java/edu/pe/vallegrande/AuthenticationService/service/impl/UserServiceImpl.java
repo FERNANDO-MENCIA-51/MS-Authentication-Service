@@ -26,6 +26,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
     public Mono<UserResponseDto> createUser(UserRequestDto userRequestDto) {
@@ -249,11 +250,10 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Hash de password (implementación temporal)
+     * Hash de password usando BCrypt
      */
     private String hashPassword(String password) {
-        // Implementación temporal - en producción usar PasswordEncoder
-        return "hashed_" + password;
+        return passwordEncoder.encode(password);
     }
 
     /**

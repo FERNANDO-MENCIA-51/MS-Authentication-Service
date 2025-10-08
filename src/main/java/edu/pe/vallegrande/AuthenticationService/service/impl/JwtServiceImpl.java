@@ -5,7 +5,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
@@ -62,54 +61,59 @@ public class JwtServiceImpl implements JwtService {
     }
     
     @Override
-    public Mono<Boolean> validateToken(String token) {
-        return Mono.fromCallable(() -> {
-            try {
-                Jwts.parser()
-                        .verifyWith(secretKey)
-                        .build()
-                        .parseSignedClaims(token);
-                return true;
-            } catch (Exception e) {
-                log.error("Token inválido: {}", e.getMessage());
-                return false;
-            }
-        });
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (Exception e) {
+            log.error("Token inválido: {}", e.getMessage());
+            return false;
+        }
     }
     
     @Override
-    public Mono<Claims> extractClaims(String token) {
-        return Mono.fromCallable(() -> {
+    public Claims extractClaims(String token) {
+        try {
             return Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-        }).onErrorReturn(null);
+        } catch (Exception e) {
+            log.error("Error al extraer claims: {}", e.getMessage());
+            return null;
+        }
     }
     
     @Override
-    public Mono<String> extractUsername(String token) {
-        return extractClaims(token)
-                .map(Claims::getSubject);
+    public String extractUsername(String token) {
+        Claims claims = extractClaims(token);
+        return claims != null ? claims.getSubject() : null;
     }
     
     @Override
-    public Mono<UUID> extractUserId(String token) {
-        return extractClaims(token)
-                .map(claims -> UUID.fromString(claims.get("userId", String.class)));
+    public UUID extractUserId(String token) {
+        Claims claims = extractClaims(token);
+        if (claims != null) {
+            String userIdStr = claims.get("userId", String.class);
+            return userIdStr != null ? UUID.fromString(userIdStr) : null;
+        }
+        return null;
     }
     
     @Override
     @SuppressWarnings("unchecked")
-    public Mono<List<String>> extractRoles(String token) {
-        return extractClaims(token)
-                .map(claims -> (List<String>) claims.get("roles"));
+    public List<String> extractRoles(String token) {
+        Claims claims = extractClaims(token);
+        return claims != null ? (List<String>) claims.get("roles") : List.of();
     }
     
     @Override
-    public Mono<Boolean> isTokenExpired(String token) {
-        return extractClaims(token)
-                .map(claims -> claims.getExpiration().before(new Date()));
+    public boolean isTokenExpired(String token) {
+        Claims claims = extractClaims(token);
+        return claims != null && claims.getExpiration().before(new Date());
     }
 }

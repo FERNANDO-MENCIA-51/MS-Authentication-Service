@@ -82,6 +82,12 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		
+		<!-- Spring Security para WebFlux - Seguridad reactiva -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		
 		<!-- JWT para autenticación -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
