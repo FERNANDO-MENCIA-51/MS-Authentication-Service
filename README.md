@@ -156,7 +156,7 @@ java -jar target/AuthenticationService-0.0.1-SNAPSHOT.jar
 - `DELETE /api/v1/users/{id}` - Eliminar usuario (lógico)
 - `PATCH /api/v1/users/{id}/restore` - Restaurar usuario eliminado
 
-### 🎭 Gestión de Roles ✅ **IMPLEMENTADO**
+### 🎭 Gestión de Roles
 - `GET /api/v1/roles` - Listar todos los roles
 - `GET /api/v1/roles/active` - Listar roles activos
 - `GET /api/v1/roles/inactive` - Listar roles inactivos
