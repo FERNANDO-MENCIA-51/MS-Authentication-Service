@@ -15,7 +15,10 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Implementación del servicio para la gestión de usuarios
@@ -27,6 +30,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public Mono<UserResponseDto> createUser(UserRequestDto userRequestDto) {
@@ -39,6 +43,9 @@ public class UserServiceImpl implements UserService {
                                 "Ya existe un usuario con el username: " + userRequestDto.getUsername()));
                     }
 
+                    // Convertir Map a String para almacenar en la base de datos
+                    String preferencesAsString = convertMapToString(userRequestDto.getPreferences());
+
                     User user = User.builder()
                             .id(UUID.randomUUID())
                             .username(userRequestDto.getUsername())
@@ -49,8 +56,7 @@ public class UserServiceImpl implements UserService {
                             .directManagerId(userRequestDto.getDirectManagerId())
                             .status(userRequestDto.getStatus() != null ? userRequestDto.getStatus() : "ACTIVE")
                             .loginAttempts(0)
-                            .preferences(userRequestDto.getPreferences() != null ? userRequestDto.getPreferences()
-                                    : new HashMap<>())
+                            .preferences(preferencesAsString)
                             .createdBy(userRequestDto.getCreatedBy())
                             .createdAt(LocalDateTime.now())
                             .updatedAt(LocalDateTime.now())
@@ -152,6 +158,11 @@ public class UserServiceImpl implements UserService {
                     return Mono.just(existingUser);
                 })
                 .flatMap(existingUser -> {
+                    // Convertir Map a String para almacenar en la base de datos
+                    String preferencesAsString = userRequestDto.getPreferences() != null 
+                        ? convertMapToString(userRequestDto.getPreferences()) 
+                        : existingUser.getPreferences();
+
                     User updatedUser = User.builder()
                             .id(existingUser.getId())
                             .username(userRequestDto.getUsername())
@@ -170,8 +181,7 @@ public class UserServiceImpl implements UserService {
                             .lastLogin(existingUser.getLastLogin())
                             .loginAttempts(existingUser.getLoginAttempts())
                             .blockedUntil(existingUser.getBlockedUntil())
-                            .preferences(userRequestDto.getPreferences() != null ? userRequestDto.getPreferences()
-                                    : existingUser.getPreferences())
+                            .preferences(preferencesAsString)
                             .createdBy(existingUser.getCreatedBy())
                             .createdAt(existingUser.getCreatedAt())
                             .updatedBy(userRequestDto.getUpdatedBy())
@@ -257,6 +267,36 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * Convertir Map<String, Object> a String
+     */
+    private String convertMapToString(Map<String, Object> map) {
+        if (map == null) {
+            return "{}";
+        }
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (Exception e) {
+            log.error("Error convirtiendo Map a String: {}", e.getMessage());
+            return "{}";
+        }
+    }
+
+    /**
+     * Convertir String a Map<String, Object>
+     */
+    private Map<String, Object> convertStringToMap(String str) {
+        if (str == null || str.isEmpty()) {
+            return new HashMap<>();
+        }
+        try {
+            return objectMapper.readValue(str, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            log.error("Error convirtiendo String a Map: {}", e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    /**
      * Mapea una entidad User a UserResponseDto
      */
     private UserResponseDto mapToResponseDto(User user) {
@@ -271,7 +311,7 @@ public class UserServiceImpl implements UserService {
                 .lastLogin(user.getLastLogin())
                 .loginAttempts(user.getLoginAttempts())
                 .blockedUntil(user.getBlockedUntil())
-                .preferences(user.getPreferences())
+                .preferences(convertStringToMap(user.getPreferences()))
                 .createdBy(user.getCreatedBy())
                 .createdAt(user.getCreatedAt())
                 .updatedBy(user.getUpdatedBy())

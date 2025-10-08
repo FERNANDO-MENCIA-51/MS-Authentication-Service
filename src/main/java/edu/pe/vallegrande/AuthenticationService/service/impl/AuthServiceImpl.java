@@ -7,18 +7,22 @@ import edu.pe.vallegrande.AuthenticationService.dto.TokenResponseDto;
 import edu.pe.vallegrande.AuthenticationService.exception.ResourceNotFoundException;
 import edu.pe.vallegrande.AuthenticationService.model.User;
 import edu.pe.vallegrande.AuthenticationService.repository.UserRepository;
+import edu.pe.vallegrande.AuthenticationService.repository.UserRoleRepository;
+import edu.pe.vallegrande.AuthenticationService.repository.RoleRepository;
 import edu.pe.vallegrande.AuthenticationService.service.AuthService;
 import edu.pe.vallegrande.AuthenticationService.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Implementación del servicio de autenticación
@@ -29,6 +33,8 @@ import java.util.Set;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final UserRoleRepository userRoleRepository;
+    private final RoleRepository roleRepository;
     private final JwtService jwtService;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
@@ -105,20 +111,28 @@ public class AuthServiceImpl implements AuthService {
                         return Mono.error(new RuntimeException("Usuario inactivo"));
                     }
 
-                    // Generar nuevos tokens
-                    List<String> roles = Arrays.asList("USER"); // Temporal, luego obtener de BD
-                    String newAccessToken = jwtService.generateAccessToken(user.getId(), user.getUsername(), roles);
-                    String newRefreshToken = jwtService.generateRefreshToken(user.getId(), user.getUsername());
+                    // Obtener roles reales del usuario
+                    return getUserRoles(user.getId())
+                            .collectList()
+                            .flatMap(roles -> {
+                                // Generar nuevos tokens
+                                List<String> roleNames = roles.stream()
+                                        .map(role -> role.getName())
+                                        .collect(Collectors.toList());
+                                
+                                String newAccessToken = jwtService.generateAccessToken(user.getId(), user.getUsername(), roleNames);
+                                String newRefreshToken = jwtService.generateRefreshToken(user.getId(), user.getUsername());
 
-                    // Invalidar el refresh token anterior
-                    blacklistedTokens.add(refreshRequest.getRefreshToken());
+                                // Invalidar el refresh token anterior
+                                blacklistedTokens.add(refreshRequest.getRefreshToken());
 
-                    return Mono.just(TokenResponseDto.builder()
-                            .accessToken(newAccessToken)
-                            .refreshToken(newRefreshToken)
-                            .tokenType("Bearer")
-                            .expiresIn(3600L) // 1 hora
-                            .build());
+                                return Mono.just(TokenResponseDto.builder()
+                                        .accessToken(newAccessToken)
+                                        .refreshToken(newRefreshToken)
+                                        .tokenType("Bearer")
+                                        .expiresIn(3600L) // 1 hora
+                                        .build());
+                            });
                 })
                 .doOnSuccess(response -> log.info("Token renovado exitosamente"));
     }
@@ -140,15 +154,18 @@ public class AuthServiceImpl implements AuthService {
     private Mono<LoginResponseDto> processSuccessfulLogin(User user) {
         // Actualizar último login y resetear intentos
         return userRepository.updateLastLogin(user.getId(), LocalDateTime.now())
-                .then(Mono.fromCallable(() -> {
-                    // Obtener roles del usuario (temporal)
-                    List<String> roles = Arrays.asList("USER"); // Luego obtener de BD
+                .then(Mono.defer(() -> getUserRoles(user.getId()).collectList()))
+                .flatMap(roles -> {
+                    // Obtener nombres de roles
+                    List<String> roleNames = roles.stream()
+                            .map(role -> role.getName())
+                            .collect(Collectors.toList());
 
                     // Generar tokens
-                    String accessToken = jwtService.generateAccessToken(user.getId(), user.getUsername(), roles);
+                    String accessToken = jwtService.generateAccessToken(user.getId(), user.getUsername(), roleNames);
                     String refreshToken = jwtService.generateRefreshToken(user.getId(), user.getUsername());
 
-                    return LoginResponseDto.builder()
+                    return Mono.just(LoginResponseDto.builder()
                             .accessToken(accessToken)
                             .refreshToken(refreshToken)
                             .tokenType("Bearer")
@@ -156,10 +173,19 @@ public class AuthServiceImpl implements AuthService {
                             .userId(user.getId())
                             .username(user.getUsername())
                             .status(user.getStatus())
-                            .roles(roles)
+                            .roles(roleNames)
                             .loginTime(LocalDateTime.now())
-                            .build();
-                }));
+                            .build());
+                });
+    }
+
+    /**
+     * Obtener roles de un usuario
+     */
+    private Flux<edu.pe.vallegrande.AuthenticationService.model.Role> getUserRoles(UUID userId) {
+        return userRoleRepository.findByUserIdAndActiveTrue(userId)
+                .flatMap(userRole -> roleRepository.findById(userRole.getRoleId()))
+                .filter(role -> role.getActive() != null && role.getActive());
     }
 
     /**

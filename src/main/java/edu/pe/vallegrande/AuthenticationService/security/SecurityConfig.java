@@ -40,14 +40,14 @@ public class SecurityConfig {
                         .pathMatchers("/actuator/health").permitAll()
                         
                         // Endpoints de Users - Requieren autenticación
-                        .pathMatchers(HttpMethod.GET, "/api/v1/users/**").hasAnyRole("ADMIN", "USER_MANAGER", "VIEWER")
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users/**").hasAnyRole("ADMIN", "USER_MANAGER", "VIEWER", "SUPER_ADMIN")
                         .pathMatchers(HttpMethod.POST, "/api/v1/users").hasAnyRole("SUPER_ADMIN", "ADMIN")
                         .pathMatchers(HttpMethod.PUT, "/api/v1/users/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
                         .pathMatchers(HttpMethod.DELETE, "/api/v1/users/**").hasRole("SUPER_ADMIN")
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/users/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
                         
                         // Endpoints de Persons - Requieren autenticación
-                        .pathMatchers(HttpMethod.GET, "/api/v1/persons/**").hasAnyRole("ADMIN", "USER_MANAGER", "VIEWER")
+                        .pathMatchers(HttpMethod.GET, "/api/v1/persons/**").hasAnyRole("ADMIN", "USER_MANAGER", "VIEWER", "SUPER_ADMIN")
                         .pathMatchers(HttpMethod.POST, "/api/v1/persons").hasAnyRole("SUPER_ADMIN", "ADMIN", "USER_MANAGER")
                         .pathMatchers(HttpMethod.PUT, "/api/v1/persons/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "USER_MANAGER")
                         .pathMatchers(HttpMethod.DELETE, "/api/v1/persons/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
