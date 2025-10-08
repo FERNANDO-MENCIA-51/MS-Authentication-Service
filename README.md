@@ -145,19 +145,47 @@ java -jar target/AuthenticationService-0.0.1-SNAPSHOT.jar
 - `POST /api/v1/auth/refresh` - Renovar token
 
 ### 👥 Gestión de Usuarios
-- `GET /api/v1/users` - Listar usuarios
-- `POST /api/v1/users` - Crear usuario
-- `PUT /api/v1/users/{id}` - Actualizar usuario
-- `DELETE /api/v1/users/{id}` - Eliminar usuario
+- `GET /api/v1/users` - Listar todos los usuarios
+- `GET /api/v1/users/active` - Listar usuarios activos
+- `GET /api/v1/users/inactive` - Listar usuarios inactivos
+- `GET /api/v1/users/{id}` - Obtener usuario por ID
+- `GET /api/v1/users/username/{username}` - Obtener usuario por username
+- `GET /api/v1/users/exists/{username}` - Verificar si existe username
+- `POST /api/v1/users` - Crear nuevo usuario
+- `PUT /api/v1/users/{id}` - Actualizar usuario existente
+- `DELETE /api/v1/users/{id}` - Eliminar usuario (lógico)
+- `PATCH /api/v1/users/{id}/restore` - Restaurar usuario eliminado
 
-### 🎭 Gestión de Roles
-- `GET /api/v1/roles` - Listar roles
-- `POST /api/v1/roles` - Crear rol
-- `PUT /api/v1/roles/{id}` - Actualizar rol
+### 🎭 Gestión de Roles ✅ **IMPLEMENTADO**
+- `GET /api/v1/roles` - Listar todos los roles
+- `GET /api/v1/roles/active` - Listar roles activos
+- `GET /api/v1/roles/inactive` - Listar roles inactivos
+- `GET /api/v1/roles/{id}` - Obtener rol por ID
+- `GET /api/v1/roles/name/{name}` - Obtener rol por nombre
+- `GET /api/v1/roles/exists/{name}` - Verificar si existe rol
+- `POST /api/v1/roles` - Crear nuevo rol
+- `PUT /api/v1/roles/{id}` - Actualizar rol existente
+- `DELETE /api/v1/roles/{id}` - Eliminar rol (lógico)
+- `PATCH /api/v1/roles/{id}/restore` - Restaurar rol eliminado
 
 ### 🛡️ Gestión de Permisos
-- `GET /api/v1/permissions` - Listar permisos
-- `POST /api/v1/permissions` - Crear permiso
+- `GET /api/v1/permissions` - Listar todos los permisos
+- `GET /api/v1/permissions/active` - Listar permisos activos
+- `GET /api/v1/permissions/module/{module}` - Permisos por módulo
+- `GET /api/v1/permissions/{id}` - Obtener permiso por ID
+- `GET /api/v1/permissions/exists` - Verificar si existe permiso
+- `POST /api/v1/permissions` - Crear nuevo permiso
+- `PUT /api/v1/permissions/{id}` - Actualizar permiso existente
+- `DELETE /api/v1/permissions/{id}` - Eliminar permiso (lógico)
+- `PATCH /api/v1/permissions/{id}/restore` - Restaurar permiso eliminado
+
+### 🔗 Gestión de Asignaciones
+- `GET /api/v1/users/{userId}/roles` - Roles asignados a usuario
+- `POST /api/v1/users/{userId}/roles/{roleId}` - Asignar rol a usuario
+- `DELETE /api/v1/users/{userId}/roles/{roleId}` - Quitar rol de usuario
+- `GET /api/v1/roles/{roleId}/permissions` - Permisos de un rol
+- `POST /api/v1/roles/{roleId}/permissions/{permissionId}` - Asignar permiso a rol
+- `DELETE /api/v1/roles/{roleId}/permissions/{permissionId}` - Quitar permiso de rol
 
 ## 🔒 Modelo de Seguridad
 
