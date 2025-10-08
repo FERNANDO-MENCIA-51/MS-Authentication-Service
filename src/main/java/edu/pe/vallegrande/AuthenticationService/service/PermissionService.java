@@ -11,6 +11,8 @@ public interface PermissionService {
     Mono<Permission> getPermissionById(UUID id);
     Mono<Permission> getPermissionByDetails(String module, String action, String resource);
     Flux<Permission> getAllPermissions();
+    Flux<Permission> getPermissionsByModule(String module);
+    Mono<Boolean> existsPermission(String module, String action, String resource);
     Mono<Permission> updatePermission(UUID id, Permission permission);
-    // deletePermission method removed as per request
+    Mono<Void> deletePermission(UUID id);
 }

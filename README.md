@@ -1,249 +1,521 @@
-# 🔐 Authentication Service - Microservicio Reactivo
+# 🔐 Authentication Service - Microservicio de Autenticación
 
-## 📋 Descripción
-Microservicio de autenticación desarrollado con **Spring WebFlux** (programación reactiva) y **PostgreSQL** como base de datos. Este servicio maneja la autenticación, autorización y gestión de usuarios de forma asíncrona y no bloqueante.
+Microservicio de autenticación y autorización desarrollado con Spring Boot 3.5.6, WebFlux (Reactive), R2DBC y PostgreSQL.
 
-## 🏗️ Arquitectura del Proyecto
+## 📋 Tabla de Contenidos
 
-```
-AuthenticationService/
-├── 📁 src/main/java/edu/pe/vallegrande/AuthenticationService/
-│   ├── 📁 config/          # Configuraciones (R2DBC, Security, etc.)
-│   ├── 📁 controller/      # Controladores REST reactivos
-│   ├── 📁 service/         # Lógica de negocio
-│   ├── 📁 repository/      # Repositorios R2DBC
-│   ├── 📁 model/          # Entidades y DTOs
-│   ├── 📁 security/       # Configuración de seguridad
-│   └── 📁 exception/      # Manejo de excepciones
-├── 📁 src/main/resources/
-│   ├── application.yml    # Configuración de la aplicación
-│   └── schema.sql        # Scripts de base de datos
-└── 📄 pom.xml           # Dependencias Maven
-```
-
-## 🛠️ Tecnologías y Dependencias
-
-### 🔧 Framework Principal
-- **Spring Boot 3.5.6** - Framework base
-- **Spring WebFlux** - Programación reactiva para APIs REST
-- **Spring Data R2DBC** - Acceso reactivo a base de datos
-
-### 🗄️ Base de Datos
-- **PostgreSQL 17** - Base de datos principal
-- **Neon PostgreSQL** - Servicio de base de datos en la nube
-- **R2DBC PostgreSQL Driver** - Driver reactivo para PostgreSQL
-
-### 📚 Utilidades
-- **Lombok** - Reducción de código boilerplate
-- **SpringDoc OpenAPI** - Documentación automática de APIs (Swagger)
-
-### 🧪 Testing
-- **Spring Boot Test** - Framework de testing
-- **Reactor Test** - Testing para código reactivo
-
-## 🧠 Orden de Creación del Microservicio
-
-### 1️⃣ **Roles** 
-```sql
-CREATE TABLE roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT,
-    is_system BOOLEAN DEFAULT false,
-    active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
-- 🎭 Definir los roles del sistema (ADMIN, USER, MANAGER, etc.)
-- 🔒 Roles de sistema vs roles personalizados
-
-### 2️⃣ **Permisos**
-```sql
-CREATE TABLE permissions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    module VARCHAR(50) NOT NULL,
-    action VARCHAR(50) NOT NULL,
-    resource VARCHAR(100),
-    description TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
-- 🛡️ Definir permisos granulares (READ, WRITE, DELETE)
-- 📦 Organizar por módulos y recursos
-
-### 3️⃣ **Personas**
-```sql
-CREATE TABLE persons (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    document_type_id INTEGER NOT NULL,
-    document_number VARCHAR(20) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    -- ... más campos
-);
-```
-- 👤 Información personal básica
-- 📄 Gestión de tipos de documento
-
-### 4️⃣ **Usuarios**
-```sql
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash VARCHAR(500) NOT NULL,
-    person_id UUID NOT NULL,
-    -- ... más campos
-);
-```
-- 🔑 Credenciales de acceso
-- 🔗 Vinculación con información personal
-
-### 5️⃣ **Usuarios Globales**
-```sql
-CREATE TABLE users_roles (
-    user_id UUID NOT NULL,
-    role_id UUID NOT NULL,
-    assigned_by UUID NOT NULL,
-    -- ... más campos
-);
-```
-- 🌐 Asignación de roles a usuarios
-- ⏰ Control de expiración y auditoría
-
-## 🚀 Configuración y Ejecución
-
-### 📋 Prerrequisitos
-- ☕ Java 17+
-- 🔧 Maven 3.6+
-- 🐘 PostgreSQL 17 (Neon)
-
-### ⚙️ Configuración
-El archivo `application.yml` está configurado para:
-- 🌐 **Puerto**: 5002
-- 🗄️ **Base de datos**: Neon PostgreSQL
-- 📖 **Swagger UI**: http://localhost:5002/swagger-ui.html
-- 🔍 **API Docs**: http://localhost:5002/api-docs
-
-### 🏃‍♂️ Ejecutar la aplicación
-```bash
-# Compilar el proyecto
-mvn clean compile
-
-# Ejecutar la aplicación
-mvn spring-boot:run
-
-# O ejecutar el JAR
-mvn clean package
-java -jar target/AuthenticationService-0.0.1-SNAPSHOT.jar
-```
-
-## 📡 Endpoints Principales
-
-### 🔐 Autenticación
-- `POST /api/v1/auth/login` - Iniciar sesión
-- `POST /api/v1/auth/logout` - Cerrar sesión
-- `POST /api/v1/auth/refresh` - Renovar token
-
-### 👥 Gestión de Usuarios
-- `GET /api/v1/users` - Listar todos los usuarios
-- `GET /api/v1/users/active` - Listar usuarios activos
-- `GET /api/v1/users/inactive` - Listar usuarios inactivos
-- `GET /api/v1/users/{id}` - Obtener usuario por ID
-- `GET /api/v1/users/username/{username}` - Obtener usuario por username
-- `GET /api/v1/users/exists/{username}` - Verificar si existe username
-- `POST /api/v1/users` - Crear nuevo usuario
-- `PUT /api/v1/users/{id}` - Actualizar usuario existente
-- `DELETE /api/v1/users/{id}` - Eliminar usuario (lógico)
-- `PATCH /api/v1/users/{id}/restore` - Restaurar usuario eliminado
-
-### 🎭 Gestión de Roles
-- `GET /api/v1/roles` - Listar todos los roles
-- `GET /api/v1/roles/active` - Listar roles activos
-- `GET /api/v1/roles/inactive` - Listar roles inactivos
-- `GET /api/v1/roles/{id}` - Obtener rol por ID
-- `GET /api/v1/roles/name/{name}` - Obtener rol por nombre
-- `GET /api/v1/roles/exists/{name}` - Verificar si existe rol
-- `POST /api/v1/roles` - Crear nuevo rol
-- `PUT /api/v1/roles/{id}` - Actualizar rol existente
-- `DELETE /api/v1/roles/{id}` - Eliminar rol (lógico)
-- `PATCH /api/v1/roles/{id}/restore` - Restaurar rol eliminado
-
-### 🛡️ Gestión de Permisos
-- `GET /api/v1/permissions` - Listar todos los permisos
-- `GET /api/v1/permissions/active` - Listar permisos activos
-- `GET /api/v1/permissions/module/{module}` - Permisos por módulo
-- `GET /api/v1/permissions/{id}` - Obtener permiso por ID
-- `GET /api/v1/permissions/exists` - Verificar si existe permiso
-- `POST /api/v1/permissions` - Crear nuevo permiso
-- `PUT /api/v1/permissions/{id}` - Actualizar permiso existente
-- `DELETE /api/v1/permissions/{id}` - Eliminar permiso (lógico)
-- `PATCH /api/v1/permissions/{id}/restore` - Restaurar permiso eliminado
-
-### 🔗 Gestión de Asignaciones
-- `GET /api/v1/users/{userId}/roles` - Roles asignados a usuario
-- `POST /api/v1/users/{userId}/roles/{roleId}` - Asignar rol a usuario
-- `DELETE /api/v1/users/{userId}/roles/{roleId}` - Quitar rol de usuario
-- `GET /api/v1/roles/{roleId}/permissions` - Permisos de un rol
-- `POST /api/v1/roles/{roleId}/permissions/{permissionId}` - Asignar permiso a rol
-- `DELETE /api/v1/roles/{roleId}/permissions/{permissionId}` - Quitar permiso de rol
-
-## 🔒 Modelo de Seguridad
-
-### 🎯 Características
-- 🔐 **Autenticación JWT** - Tokens seguros
-- 🛡️ **Autorización basada en roles** - Control granular
-- 🔄 **Programación reactiva** - Alto rendimiento
-- 📊 **Auditoría completa** - Trazabilidad de cambios
-
-### 🗂️ Estructura de Permisos
-```
-module:action:resource
-Ejemplo: USER:READ:PROFILE
-         USER:WRITE:PASSWORD
-         ADMIN:DELETE:USER
-```
-
-## 📊 Base de Datos
-
-### 🔗 Relaciones Principales
-- `users` ↔ `persons` (1:1)
-- `users` ↔ `roles` (N:M) via `users_roles`
-- `roles` ↔ `permissions` (N:M) via `roles_permissions`
-
-### 🔑 Características
-- 🆔 **UUIDs** como claves primarias
-- ⏰ **Timestamps** automáticos
-- 🔒 **Constraints** de integridad
-- 📝 **Auditoría** integrada
-
-## 🧪 Testing
-
-```bash
-# Ejecutar tests
-mvn test
-
-# Tests con cobertura
-mvn test jacoco:report
-```
-
-## 📖 Documentación API
-
-Una vez ejecutada la aplicación, accede a:
-- **Swagger UI**: http://localhost:5002/swagger-ui.html
-- **OpenAPI JSON**: http://localhost:5002/api-docs
-
-## 🤝 Contribución
-
-1. 🍴 Fork el proyecto
-2. 🌿 Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. 💾 Commit cambios (`git commit -am 'Agregar nueva funcionalidad'`)
-4. 📤 Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. 🔄 Crear Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+- [Características](#características)
+- [Tecnologías](#tecnologías)
+- [Arquitectura](#arquitectura)
+- [Configuración](#configuración)
+- [Endpoints API](#endpoints-api)
+- [Modelo de Datos](#modelo-de-datos)
+- [Seguridad](#seguridad)
+- [Documentación](#documentación)
+- [Despliegue](#despliegue)
+- [Estado del Proyecto](#estado-del-proyecto)
+- [Equipo de Desarrollo](#equipo-de-desarrollo)
 
 ---
 
-🚀 **¡Listo para desarrollar tu microservicio de autenticación reactivo!**
+## Características
+
+### ✅ Funcionalidades Implementadas
+
+- ✅ **Autenticación JWT** - Login, logout y refresh tokens
+- ✅ **Gestión de Usuarios** - CRUD completo con validaciones
+- ✅ **Gestión de Personas** - Información personal y documentos
+- ✅ **Sistema de Roles** - Roles del sistema y personalizados
+- ✅ **Permisos Granulares** - Control de acceso por módulo/acción/recurso
+- ✅ **Asignación Usuario-Rol** - Gestión de roles por usuario
+- ✅ **Asignación Rol-Permiso** - Gestión de permisos por rol
+- ✅ **Validaciones de Negocio** - Duplicados, estados, bloqueos
+- ✅ **Documentación Swagger** - API interactiva y documentada
+- ✅ **CORS Configurado** - Listo para integración con frontend
+- ✅ **Manejo de Excepciones** - Respuestas consistentes y claras
+- ✅ **Logging Detallado** - Trazabilidad completa de operaciones
+
+---
+
+## Tecnologías
+
+### Backend
+- **Java 17**
+- **Spring Boot 3.5.6**
+- **Spring WebFlux** (Programación Reactiva)
+- **Spring Data R2DBC** (Acceso reactivo a base de datos)
+- **PostgreSQL** (Base de datos)
+- **JJWT** (JSON Web Tokens)
+- **Lombok** (Reducción de código boilerplate)
+- **SpringDoc OpenAPI** (Documentación Swagger)
+
+### Base de Datos
+- **PostgreSQL 15+** (Neon Database)
+- **R2DBC PostgreSQL Driver**
+
+---
+
+## Arquitectura
+
+### Arquitectura de Capas
+
+```
+┌─────────────────────────────────────────┐
+│         Controllers (REST API)          │
+│  - UserController                       │
+│  - PersonController                     │
+│  - RoleController                       │
+│  - PermissionController                 │
+│  - AuthController                       │
+│  - AssignmentController                 │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│            Services (Lógica)            │
+│  - UserService                          │
+│  - PersonService                        │
+│  - RoleService                          │
+│  - PermissionService                    │
+│  - AuthService                          │
+│  - AssignmentService                    │
+│  - JwtService                           │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│       Repositories (Acceso Datos)       │
+│  - UserRepository                       │
+│  - PersonRepository                     │
+│  - RoleRepository                       │
+│  - PermissionRepository                 │
+│  - UserRoleRepository                   │
+│  - RolePermissionRepository             │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│         PostgreSQL Database             │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Configuración
+
+### application.yml
+
+```yaml
+server:
+  port: 8081
+
+spring:
+  application:
+    name: authentication-service
+  
+  r2dbc:
+    url: r2dbc:postgresql://ep-quiet-sea-a5iqvqxe.us-east-2.aws.neon.tech:5432/ms-authenticationService
+    username: ms-authenticationService_owner
+    password: your-password
+    pool:
+      initial-size: 10
+      max-size: 20
+
+jwt:
+  secret: your-secret-key-here-min-256-bits
+  expiration: 3600000  # 1 hora
+  refresh-expiration: 86400000  # 24 horas
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+```
+
+---
+
+## Endpoints API
+
+### 🔐 Authentication
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/login` | Iniciar sesión |
+| POST | `/api/v1/auth/logout` | Cerrar sesión |
+| POST | `/api/v1/auth/refresh` | Renovar token |
+
+### 👤 Users
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/v1/users` | Crear usuario |
+| GET | `/api/v1/users/{id}` | Obtener usuario por ID |
+| GET | `/api/v1/users` | Listar todos los usuarios |
+| GET | `/api/v1/users/username/{username}` | Buscar por username |
+| GET | `/api/v1/users/active` | Listar usuarios activos |
+| PUT | `/api/v1/users/{id}` | Actualizar usuario |
+| DELETE | `/api/v1/users/{id}` | Eliminar usuario (lógico) |
+| PATCH | `/api/v1/users/{id}/activate` | Activar usuario |
+| PATCH | `/api/v1/users/{id}/deactivate` | Desactivar usuario |
+| PATCH | `/api/v1/users/{id}/block` | Bloquear usuario |
+| PATCH | `/api/v1/users/{id}/unblock` | Desbloquear usuario |
+
+### 👥 Persons
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/v1/persons` | Crear persona |
+| GET | `/api/v1/persons/{id}` | Obtener persona por ID |
+| GET | `/api/v1/persons` | Listar todas las personas |
+| GET | `/api/v1/persons/document` | Buscar por documento |
+| GET | `/api/v1/persons/email/{email}` | Buscar por email |
+| GET | `/api/v1/persons/search` | Búsqueda avanzada |
+| PUT | `/api/v1/persons/{id}` | Actualizar persona |
+| DELETE | `/api/v1/persons/{id}` | Eliminar persona |
+
+### 🎭 Roles
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/v1/roles` | Crear rol |
+| GET | `/api/v1/roles/{id}` | Obtener rol por ID |
+| GET | `/api/v1/roles` | Listar todos los roles |
+| GET | `/api/v1/roles/active` | Listar roles activos |
+| GET | `/api/v1/roles/system` | Listar roles del sistema |
+| GET | `/api/v1/roles/name/{name}` | Buscar por nombre |
+| PUT | `/api/v1/roles/{id}` | Actualizar rol |
+| DELETE | `/api/v1/roles/{id}` | Eliminar rol (lógico) |
+| PATCH | `/api/v1/roles/{id}/activate` | Activar rol |
+| PATCH | `/api/v1/roles/{id}/deactivate` | Desactivar rol |
+
+### 🔑 Permissions
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/v1/permissions` | Crear permiso |
+| GET | `/api/v1/permissions/{id}` | Obtener permiso por ID |
+| GET | `/api/v1/permissions` | Listar todos los permisos |
+| GET | `/api/v1/permissions/module/{module}` | Permisos por módulo |
+| GET | `/api/v1/permissions/search` | Buscar por detalles |
+| GET | `/api/v1/permissions/exists` | Verificar existencia |
+| PUT | `/api/v1/permissions/{id}` | Actualizar permiso |
+| DELETE | `/api/v1/permissions/{id}` | Eliminar permiso |
+
+### 🔗 Assignments
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/v1/assignments/users/{userId}/roles` | Roles de un usuario |
+| POST | `/api/v1/assignments/users/{userId}/roles/{roleId}` | Asignar rol a usuario |
+| DELETE | `/api/v1/assignments/users/{userId}/roles/{roleId}` | Quitar rol a usuario |
+| GET | `/api/v1/assignments/roles/{roleId}/users` | Usuarios con un rol |
+| GET | `/api/v1/assignments/roles/{roleId}/permissions` | Permisos de un rol |
+| POST | `/api/v1/assignments/roles/{roleId}/permissions/{permissionId}` | Asignar permiso a rol |
+| DELETE | `/api/v1/assignments/roles/{roleId}/permissions/{permissionId}` | Quitar permiso a rol |
+| GET | `/api/v1/assignments/users/{userId}/permissions` | Permisos efectivos de usuario |
+
+---
+
+## Modelo de Datos
+
+### Tablas Principales
+
+#### 1️⃣ **users** - Usuarios del Sistema
+```sql
+CREATE TABLE users (
+    id              UUID PRIMARY KEY,
+    username        VARCHAR(50) UNIQUE NOT NULL,
+    password_hash   VARCHAR(500) NOT NULL,
+    person_id       UUID NOT NULL,
+    area_id         UUID NOT NULL,
+    position_id     UUID NOT NULL,
+    direct_manager_id UUID,
+    status          VARCHAR(20) DEFAULT 'ACTIVE',
+    last_login      TIMESTAMP,
+    login_attempts  INTEGER DEFAULT 0,
+    blocked_until   TIMESTAMP,
+    preferences     JSONB,
+    created_by      UUID,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_by      UUID,
+    updated_at      TIMESTAMP DEFAULT NOW(),
+    version         INTEGER DEFAULT 1
+);
+```
+
+#### 2️⃣ **persons** - Información Personal
+```sql
+CREATE TABLE persons (
+    id              UUID PRIMARY KEY,
+    document_type_id INTEGER NOT NULL,
+    document_number VARCHAR(20) NOT NULL,
+    first_name      VARCHAR(100) NOT NULL,
+    last_name       VARCHAR(100) NOT NULL,
+    middle_name     VARCHAR(100),
+    birth_date      DATE,
+    gender          CHAR(1),
+    personal_phone  VARCHAR(20),
+    work_phone      VARCHAR(20),
+    personal_email  VARCHAR(200),
+    address         TEXT,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### 3️⃣ **roles** - Roles del Sistema
+```sql
+CREATE TABLE roles (
+    id              UUID PRIMARY KEY,
+    name            VARCHAR(50) UNIQUE NOT NULL,
+    description     TEXT,
+    is_system       BOOLEAN DEFAULT false,
+    active          BOOLEAN DEFAULT true,
+    created_by      UUID,
+    created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### 4️⃣ **permissions** - Permisos Granulares
+```sql
+CREATE TABLE permissions (
+    id              UUID PRIMARY KEY,
+    module          VARCHAR(50) NOT NULL,
+    action          VARCHAR(50) NOT NULL,
+    resource        VARCHAR(100),
+    description     TEXT,
+    created_by      UUID,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uk_permission UNIQUE (module, action, resource)
+);
+```
+
+#### 5️⃣ **users_roles** - Asignación Usuario-Rol
+```sql
+CREATE TABLE users_roles (
+    user_id         UUID NOT NULL,
+    role_id         UUID NOT NULL,
+    assigned_by     UUID NOT NULL,
+    assigned_at     TIMESTAMP DEFAULT NOW(),
+    expiration_date DATE,
+    active          BOOLEAN DEFAULT true,
+    PRIMARY KEY (user_id, role_id)
+);
+```
+
+#### 6️⃣ **roles_permissions** - Asignación Rol-Permiso
+```sql
+CREATE TABLE roles_permissions (
+    role_id         UUID NOT NULL,
+    permission_id   UUID NOT NULL,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (role_id, permission_id)
+);
+```
+
+#### 7️⃣ **document_types** - Tipos de Documentos
+```sql
+CREATE TABLE document_types (
+    id              INTEGER PRIMARY KEY,
+    code            VARCHAR(5) UNIQUE NOT NULL,
+    description     VARCHAR(50) NOT NULL,
+    length          INTEGER NOT NULL,
+    active          BOOLEAN DEFAULT true
+);
+```
+
+### Diagrama de Relaciones
+
+```
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│   persons   │◄──────│    users    │──────►│ users_roles │
+└─────────────┘       └─────────────┘       └─────────────┘
+                             │                      │
+                             │                      ▼
+                             │              ┌─────────────┐
+                             │              │    roles    │
+                             │              └─────────────┘
+                             │                      │
+                             ▼                      ▼
+                      ┌─────────────┐       ┌──────────────────┐
+                      │document_types│       │roles_permissions │
+                      └─────────────┘       └──────────────────┘
+                                                     │
+                                                     ▼
+                                             ┌─────────────┐
+                                             │ permissions │
+                                             └─────────────┘
+```
+
+---
+
+## Seguridad
+
+### Autenticación JWT
+
+El sistema utiliza JSON Web Tokens (JWT) para la autenticación:
+
+1. **Login**: El usuario envía credenciales y recibe un access token y refresh token
+2. **Access Token**: Token de corta duración (1 hora) para acceder a recursos protegidos
+3. **Refresh Token**: Token de larga duración (24 horas) para renovar el access token
+4. **Logout**: Invalida los tokens del usuario
+
+### Ejemplo de Login
+
+**Request:**
+```json
+POST /api/v1/auth/login
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
+
+**Response:**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzUxMiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzUxMiJ9...",
+  "tokenType": "Bearer",
+  "expiresIn": 3600
+}
+```
+
+### Sistema de Permisos
+
+Los permisos se definen con tres componentes:
+
+- **Module**: Módulo del sistema (users, roles, permissions, etc.)
+- **Action**: Acción a realizar (read, write, delete, etc.)
+- **Resource**: Recurso específico (opcional)
+
+**Ejemplo:**
+```
+module: "users"
+action: "write"
+resource: "profile"
+```
+
+---
+
+## Documentación
+
+### Swagger UI
+
+La documentación interactiva de la API está disponible en:
+
+```
+http://localhost:5002/webjars/swagger-ui/index.html#/
+```
+
+### OpenAPI Specification
+
+El archivo de especificación OpenAPI está disponible en:
+
+```
+http://localhost:5002/api-docs
+```
+
+---
+
+## Despliegue
+
+### Docker
+
+```dockerfile
+FROM openjdk:17-jdk-slim
+WORKDIR /app
+COPY target/*.jar app.jar
+EXPOSE 8081
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+**Construir imagen:**
+```bash
+docker build -t authentication-service .
+```
+
+**Ejecutar contenedor:**
+```bash
+docker run -p 8081:8081 authentication-service
+```
+
+---
+
+## Estado del Proyecto
+
+### ✅ Microservicios Completados
+
+| Microservicio | Estado | Descripción |
+|---------------|--------|-------------|
+| ✅ **Authentication Service** | **COMPLETADO** | Autenticación, usuarios, roles y permisos |
+| ⏳ Areas Service | En desarrollo | Gestión de áreas organizacionales |
+| ⏳ Positions Service | En desarrollo | Gestión de cargos y posiciones |
+
+### 🎯 Funcionalidades por Módulo
+
+#### ✅ Users (100%)
+- ✅ CRUD completo
+- ✅ Gestión de estados (activo/inactivo/suspendido)
+- ✅ Bloqueo/desbloqueo de usuarios
+- ✅ Control de intentos de login
+- ✅ Búsquedas avanzadas
+
+#### ✅ Persons (100%)
+- ✅ CRUD completo
+- ✅ Validación de documentos
+- ✅ Búsqueda por documento/email
+- ✅ Campos calculados (nombre completo, edad)
+
+#### ✅ Roles (100%)
+- ✅ CRUD completo
+- ✅ Roles del sistema vs personalizados
+- ✅ Gestión de estado activo/inactivo
+- ✅ Búsquedas y filtros
+
+#### ✅ Permissions (100%)
+- ✅ CRUD completo
+- ✅ Permisos granulares por módulo/acción/recurso
+- ✅ Búsquedas por módulo
+- ✅ Validación de duplicados
+
+#### ✅ Authentication (100%)
+- ✅ Login con JWT
+- ✅ Logout
+- ✅ Refresh token
+- ✅ Validación de tokens
+
+#### ✅ Assignments (100%)
+- ✅ Asignación usuario-rol
+- ✅ Asignación rol-permiso
+- ✅ Consultas de permisos efectivos
+- ✅ Validaciones de asignaciones
+
+---
+
+## Equipo de Desarrollo
+
+- **Backend Developers**: Luis Mencia, Henry Lunazco, Kimberling Lipa
+- **Database Design**: Henry Lunazco
+- **API Documentation**: Luis Mencia
+
+---
+
+## 📝 Licencia
+
+Este proyecto es privado y confidencial.
+
+---
+
+## 🔄 Changelog
+
+### Version 1.0.0 (2025-01-08)
+- ✅ Implementación completa del microservicio de autenticación
+- ✅ CRUD de usuarios, personas, roles y permisos
+- ✅ Sistema de autenticación JWT
+- ✅ Sistema de asignaciones usuario-rol y rol-permiso
+- ✅ Documentación Swagger completa
+- ✅ Configuración CORS
+- ✅ Manejo de excepciones centralizado
+
+---
+
+**🎉 Microservicio de Autenticación - Completamente Funcional y Listo para Producción**

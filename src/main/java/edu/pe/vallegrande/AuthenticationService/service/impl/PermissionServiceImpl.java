@@ -23,26 +23,30 @@ public class PermissionServiceImpl implements PermissionService {
     public Mono<Permission> createPermission(Permission permission) {
         permission.setId(UUID.randomUUID());
         permission.setCreatedAt(LocalDateTime.now());
-        
+
         // Check if permission with same module, action, and resource already exists
-        return permissionRepository.findByModuleAndActionAndResource(
+        return permissionRepository.existsByModuleAndActionAndResource(
                 permission.getModule(), permission.getAction(), permission.getResource())
-            .flatMap(existing -> Mono.error(new DuplicateResourceException("Permission already exists with these details")))
-            .switchIfEmpty(Mono.defer(() -> permissionRepository.save(permission)))
-            .cast(Permission.class);
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.error(new DuplicateResourceException("Permission already exists with these details"));
+                    }
+                    return permissionRepository.save(permission);
+                });
     }
 
     @Override
     public Mono<Permission> getPermissionById(UUID id) {
         return permissionRepository.findById(id)
-            .switchIfEmpty(Mono.error(new ResourceNotFoundException("Permission not found with id: " + id)));
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Permission not found with id: " + id)));
     }
 
     @Override
     public Mono<Permission> getPermissionByDetails(String module, String action, String resource) {
         return permissionRepository.findByModuleAndActionAndResource(module, action, resource)
-            .switchIfEmpty(Mono.error(new ResourceNotFoundException(
-                "Permission not found with module: " + module + ", action: " + action + ", resource: " + resource)));
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                        "Permission not found with module: " + module + ", action: " + action + ", resource: "
+                                + resource)));
     }
 
     @Override
@@ -51,17 +55,33 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    public Mono<Permission> updatePermission(UUID id, Permission permission) {
-        return permissionRepository.findById(id)
-            .switchIfEmpty(Mono.error(new ResourceNotFoundException("Permission not found with id: " + id)))
-            .flatMap(existing -> {
-                existing.setModule(permission.getModule());
-                existing.setAction(permission.getAction());
-                existing.setResource(permission.getResource());
-                existing.setDescription(permission.getDescription());
-                // Note: We don't update the createdAt timestamp or createdBy fields
-                return permissionRepository.save(existing);
-            });
+    public Flux<Permission> getPermissionsByModule(String module) {
+        return permissionRepository.findByModule(module);
     }
 
+    @Override
+    public Mono<Boolean> existsPermission(String module, String action, String resource) {
+        return permissionRepository.existsByModuleAndActionAndResource(module, action, resource);
+    }
+
+    @Override
+    public Mono<Permission> updatePermission(UUID id, Permission permission) {
+        return permissionRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Permission not found with id: " + id)))
+                .flatMap(existing -> {
+                    existing.setModule(permission.getModule());
+                    existing.setAction(permission.getAction());
+                    existing.setResource(permission.getResource());
+                    existing.setDescription(permission.getDescription());
+                    return permissionRepository.save(existing);
+                });
+    }
+
+    @Override
+    public Mono<Void> deletePermission(UUID id) {
+        return permissionRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Permission not found with id: " + id)))
+                .flatMap(permission -> permissionRepository.delete(permission))
+                .then();
+    }
 }
