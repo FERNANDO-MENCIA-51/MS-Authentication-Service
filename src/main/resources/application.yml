@@ -13,22 +13,24 @@ spring:
       max-idle-time: 30m
       validation-query: SELECT 1
 
-  # Configuración WebFlux
-  webflux:
-    base-path: /api/v1
+  # Configuración de inicialización de base de datos
+  sql:
+    init:
+      mode: never # Las tablas ya existen en Neon
 
 # Configuración del servidor
 server:
   port: 5002
 
-# Configuración de SpringDoc OpenAPI para WebFlux
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
-  show-actuator: true
+# Configuración de Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
 
 # Configuración de logging
 logging:
