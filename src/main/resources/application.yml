@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: AuthenticationService
+
+  # Configuración R2DBC para Neon PostgreSQL
+  r2dbc:
+    url: r2dbc:postgresql://ep-plain-sound-ad14svv9-pooler.c-2.us-east-1.aws.neon.tech:5432/ms-authenticationService?sslmode=require&channel_binding=require
+    username: neondb_owner
+    password: npg_HFo2ij7rgRbN
+    pool:
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+      validation-query: SELECT 1
+
+  # Configuración WebFlux
+  webflux:
+    base-path: /api/v1
+
+# Configuración del servidor
+server:
+  port: 5002
+
+# Configuración de SpringDoc OpenAPI para WebFlux
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  show-actuator: true
+
+# Configuración de logging
+logging:
+  level:
+    "[io.r2dbc.postgresql.QUERY]": DEBUG # Para ver las queries SQL en desarrollo
+    "[io.r2dbc.postgresql.PARAM]": DEBUG # Para ver los parámetros de las queries
+    "[org.springframework.r2dbc]": DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
