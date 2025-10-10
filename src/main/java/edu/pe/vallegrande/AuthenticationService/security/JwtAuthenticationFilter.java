@@ -33,6 +33,12 @@ public class JwtAuthenticationFilter implements WebFilter {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
 
+        // ✅ Permitir peticiones OPTIONS (preflight) sin validar JWT
+        if (request.getMethod() != null && request.getMethod().name().equals("OPTIONS")) {
+            log.debug("Permitiendo preflight request OPTIONS para: {}", path);
+            return chain.filter(exchange);
+        }
+
         // Permitir endpoints públicos sin autenticación
         if (isPublicPath(path)) {
             return chain.filter(exchange);
@@ -40,7 +46,7 @@ public class JwtAuthenticationFilter implements WebFilter {
 
         // Extraer token del header Authorization
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        
+
         if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
             log.warn("Request sin token JWT a endpoint protegido: {}", path);
             return chain.filter(exchange);
@@ -53,7 +59,7 @@ public class JwtAuthenticationFilter implements WebFilter {
             if (jwtService.validateToken(token)) {
                 String username = jwtService.extractUsername(token);
                 List<String> roles = jwtService.extractRoles(token);
-                
+
                 log.debug("Usuario autenticado: {} con roles: {}", username, roles);
 
                 // Crear authorities de Spring Security
@@ -62,8 +68,8 @@ public class JwtAuthenticationFilter implements WebFilter {
                         .collect(Collectors.toList());
 
                 // Crear authentication token
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(username, null, authorities);
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username,
+                        null, authorities);
 
                 // Establecer el contexto de seguridad
                 return chain.filter(exchange)
@@ -83,11 +89,11 @@ public class JwtAuthenticationFilter implements WebFilter {
      */
     private boolean isPublicPath(String path) {
         return path.equals("/api/v1/auth/login") ||
-               path.equals("/api/v1/auth/refresh") ||
-               path.startsWith("/swagger-ui") ||
-               path.startsWith("/webjars/") ||
-               path.startsWith("/v3/api-docs") ||
-               path.startsWith("/api-docs") ||
-               path.equals("/actuator/health");
+                path.equals("/api/v1/auth/refresh") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/webjars/") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/api-docs") ||
+                path.equals("/actuator/health");
     }
 }
