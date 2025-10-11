@@ -87,4 +87,21 @@ public interface PersonRepository extends R2dbcRepository<Person, UUID> {
      */
     @Query("SELECT AVG(EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM birth_date)) FROM persons WHERE birth_date IS NOT NULL")
     Mono<Double> getAverageAge();
+    
+    /**
+     * Buscar todas las personas activas
+     */
+    @Query("SELECT * FROM persons WHERE status = true")
+    Flux<Person> findAllActive();
+    
+    /**
+     * Buscar todas las personas inactivas
+     */
+    @Query("SELECT * FROM persons WHERE status = false")
+    Flux<Person> findAllInactive();
+    
+    /**
+     * Buscar personas por estado
+     */
+    Flux<Person> findByStatus(Boolean status);
 }

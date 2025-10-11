@@ -59,6 +59,9 @@ public class Person {
     @Column("address")
     private String address;
     
+    @Column("status")
+    private Boolean status;
+    
     @Column("created_at")
     private LocalDateTime createdAt;
     

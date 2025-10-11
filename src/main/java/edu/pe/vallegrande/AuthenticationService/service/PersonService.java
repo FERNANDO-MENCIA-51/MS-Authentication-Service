@@ -23,6 +23,16 @@ public interface PersonService {
     Flux<PersonResponseDto> getAllPersons();
     
     /**
+     * Obtener todas las personas activas
+     */
+    Flux<PersonResponseDto> getAllActivePersons();
+    
+    /**
+     * Obtener todas las personas inactivas
+     */
+    Flux<PersonResponseDto> getAllInactivePersons();
+    
+    /**
      * Obtener persona por ID
      */
     Mono<PersonResponseDto> getPersonById(UUID id);
@@ -63,9 +73,14 @@ public interface PersonService {
     Mono<PersonResponseDto> updatePerson(UUID id, PersonRequestDto personRequestDto);
     
     /**
-     * Eliminar una persona
+     * Eliminar una persona (borrado lógico)
      */
-    Mono<Void> deletePerson(UUID id);
+    Mono<PersonResponseDto> deletePerson(UUID id);
+    
+    /**
+     * Restaurar una persona eliminada
+     */
+    Mono<PersonResponseDto> restorePerson(UUID id);
     
     /**
      * Verificar si existe una persona por documento

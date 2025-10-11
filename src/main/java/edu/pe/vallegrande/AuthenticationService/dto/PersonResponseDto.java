@@ -32,6 +32,7 @@ public class PersonResponseDto {
     private String workPhone;
     private String personalEmail;
     private String address;
+    private Boolean status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

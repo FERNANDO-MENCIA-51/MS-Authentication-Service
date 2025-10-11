@@ -49,6 +49,20 @@ public class PersonController {
         return personService.getAllPersons();
     }
     
+    @Operation(summary = "Obtener todas las personas activas")
+    @GetMapping("/active")
+    public Flux<PersonResponseDto> getAllActivePersons() {
+        log.info("Solicitud para obtener todas las personas activas");
+        return personService.getAllActivePersons();
+    }
+    
+    @Operation(summary = "Obtener todas las personas inactivas")
+    @GetMapping("/inactive")
+    public Flux<PersonResponseDto> getAllInactivePersons() {
+        log.info("Solicitud para obtener todas las personas inactivas");
+        return personService.getAllInactivePersons();
+    }
+    
     @Operation(summary = "Obtener persona por ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Persona encontrada"),
@@ -123,13 +137,26 @@ public class PersonController {
                 .map(person -> ResponseEntity.ok(person));
     }
     
-    @Operation(summary = "Eliminar una persona")
+    @Operation(summary = "Eliminar una persona (borrado lógico)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Persona eliminada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Persona no encontrada")
+    })
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Void>> deletePerson(
+    public Mono<ResponseEntity<PersonResponseDto>> deletePerson(
             @Parameter(description = "ID de la persona") @PathVariable UUID id) {
         log.info("Solicitud para eliminar persona con ID: {}", id);
         return personService.deletePerson(id)
-                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
+                .map(person -> ResponseEntity.ok(person));
+    }
+    
+    @Operation(summary = "Restaurar una persona eliminada")
+    @PatchMapping("/{id}/restore")
+    public Mono<ResponseEntity<PersonResponseDto>> restorePerson(
+            @Parameter(description = "ID de la persona") @PathVariable UUID id) {
+        log.info("Solicitud para restaurar persona con ID: {}", id);
+        return personService.restorePerson(id)
+                .map(person -> ResponseEntity.ok(person));
     }
     
     @Operation(summary = "Verificar si existe persona por documento")

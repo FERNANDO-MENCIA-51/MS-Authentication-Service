@@ -4,9 +4,9 @@ spring:
 
   # Configuración R2DBC para Neon PostgreSQL
   r2dbc:
-    url: r2dbc:postgresql://ep-plain-sound-ad14svv9-pooler.c-2.us-east-1.aws.neon.tech:5432/ms-authenticationService?sslmode=require&channel_binding=require
-    username: neondb_owner
-    password: npg_HFo2ij7rgRbN
+    url: ${DATABASE_URL:r2dbc:postgresql://ep-plain-sound-ad14svv9-pooler.c-2.us-east-1.aws.neon.tech:5432/ms-authenticationService?sslmode=require&channel_binding=require}
+    username: ${DB_USERNAME:neondb_owner}
+    password: ${DB_PASSWORD:npg_HFo2ij7rgRbN}
     pool:
       initial-size: 5
       max-size: 20
@@ -20,7 +20,7 @@ spring:
 
 # Configuración del servidor
 server:
-  port: 5002
+  port: ${PORT:5002}
 
 # Configuración de Actuator
 management:

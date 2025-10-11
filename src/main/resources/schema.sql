@@ -48,6 +48,7 @@ CREATE TABLE persons (
     address TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
+    status BOOLEAN DEFAULT true NOT NULL,
     CONSTRAINT chk_gender CHECK (gender IN ('M', 'F')),
     CONSTRAINT uk_person_document UNIQUE (document_type_id, document_number)
 );

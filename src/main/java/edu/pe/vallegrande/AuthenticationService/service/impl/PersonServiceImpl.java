@@ -25,34 +25,36 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class PersonServiceImpl implements PersonService {
-    
+
     private final PersonRepository personRepository;
-    
+
     @Override
     public Mono<PersonResponseDto> createPerson(PersonRequestDto personRequestDto) {
         log.info("Creando nueva persona: {} {}", personRequestDto.getFirstName(), personRequestDto.getLastName());
-        
+
         return personRepository.existsByDocumentTypeIdAndDocumentNumber(
-                personRequestDto.getDocumentTypeId(), 
+                personRequestDto.getDocumentTypeId(),
                 personRequestDto.getDocumentNumber())
                 .flatMap(exists -> {
                     if (exists) {
                         return Mono.error(new DuplicateResourceException(
                                 "Ya existe una persona con el documento: " + personRequestDto.getDocumentNumber()));
                     }
-                    
+
                     // Verificar email si se proporciona
-                    if (personRequestDto.getPersonalEmail() != null && !personRequestDto.getPersonalEmail().trim().isEmpty()) {
+                    if (personRequestDto.getPersonalEmail() != null
+                            && !personRequestDto.getPersonalEmail().trim().isEmpty()) {
                         return personRepository.existsByPersonalEmail(personRequestDto.getPersonalEmail())
                                 .flatMap(emailExists -> {
                                     if (emailExists) {
                                         return Mono.error(new DuplicateResourceException(
-                                                "Ya existe una persona con el email: " + personRequestDto.getPersonalEmail()));
+                                                "Ya existe una persona con el email: "
+                                                        + personRequestDto.getPersonalEmail()));
                                     }
                                     return createPersonEntity(personRequestDto);
                                 });
                     }
-                    
+
                     return createPersonEntity(personRequestDto);
                 })
                 .flatMap(personRepository::save)
@@ -60,14 +62,28 @@ public class PersonServiceImpl implements PersonService {
                 .doOnSuccess(person -> log.info("Persona creada exitosamente: {}", person.getFullName()))
                 .doOnError(error -> log.error("Error al crear persona: {}", error.getMessage()));
     }
-    
+
     @Override
     public Flux<PersonResponseDto> getAllPersons() {
         log.info("Obteniendo todas las personas");
         return personRepository.findAll()
                 .map(this::mapToResponseDto);
     }
-    
+
+    @Override
+    public Flux<PersonResponseDto> getAllActivePersons() {
+        log.info("Obteniendo todas las personas activas");
+        return personRepository.findAllActive()
+                .map(this::mapToResponseDto);
+    }
+
+    @Override
+    public Flux<PersonResponseDto> getAllInactivePersons() {
+        log.info("Obteniendo todas las personas inactivas");
+        return personRepository.findAllInactive()
+                .map(this::mapToResponseDto);
+    }
+
     @Override
     public Mono<PersonResponseDto> getPersonById(UUID id) {
         log.info("Obteniendo persona por ID: {}", id);
@@ -75,7 +91,7 @@ public class PersonServiceImpl implements PersonService {
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Persona no encontrada con ID: " + id)))
                 .map(this::mapToResponseDto);
     }
-    
+
     @Override
     public Mono<PersonResponseDto> getPersonByDocument(Integer documentTypeId, String documentNumber) {
         log.info("Obteniendo persona por documento: {} - {}", documentTypeId, documentNumber);
@@ -84,7 +100,7 @@ public class PersonServiceImpl implements PersonService {
                         "Persona no encontrada con documento: " + documentNumber)))
                 .map(this::mapToResponseDto);
     }
-    
+
     @Override
     public Mono<PersonResponseDto> getPersonByEmail(String email) {
         log.info("Obteniendo persona por email: {}", email);
@@ -92,46 +108,46 @@ public class PersonServiceImpl implements PersonService {
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Persona no encontrada con email: " + email)))
                 .map(this::mapToResponseDto);
     }
-    
+
     @Override
     public Flux<PersonResponseDto> searchPersonsByName(String name) {
         log.info("Buscando personas por nombre: {}", name);
         return personRepository.findByNameContaining(name)
                 .map(this::mapToResponseDto);
     }
-    
+
     @Override
     public Flux<PersonResponseDto> getPersonsByDocumentType(Integer documentTypeId) {
         log.info("Obteniendo personas por tipo de documento: {}", documentTypeId);
         return personRepository.findByDocumentTypeId(documentTypeId)
                 .map(this::mapToResponseDto);
     }
-    
+
     @Override
     public Flux<PersonResponseDto> getPersonsByGender(String gender) {
         log.info("Obteniendo personas por género: {}", gender);
         return personRepository.findByGender(gender)
                 .map(this::mapToResponseDto);
     }
-    
+
     @Override
     public Flux<PersonResponseDto> getPersonsByBirthYear(Integer year) {
         log.info("Obteniendo personas por año de nacimiento: {}", year);
         return personRepository.findByBirthYear(year)
                 .map(this::mapToResponseDto);
     }
-    
+
     @Override
     public Mono<PersonResponseDto> updatePerson(UUID id, PersonRequestDto personRequestDto) {
         log.info("Actualizando persona con ID: {}", id);
-        
+
         return personRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Persona no encontrada con ID: " + id)))
                 .flatMap(existingPerson -> {
                     // Verificar documento si cambió
                     if (!existingPerson.getDocumentTypeId().equals(personRequestDto.getDocumentTypeId()) ||
-                        !existingPerson.getDocumentNumber().equals(personRequestDto.getDocumentNumber())) {
-                        
+                            !existingPerson.getDocumentNumber().equals(personRequestDto.getDocumentNumber())) {
+
                         return personRepository.existsByDocumentAndIdNot(
                                 personRequestDto.getDocumentTypeId(),
                                 personRequestDto.getDocumentNumber(),
@@ -139,7 +155,8 @@ public class PersonServiceImpl implements PersonService {
                                 .flatMap(exists -> {
                                     if (exists) {
                                         return Mono.error(new DuplicateResourceException(
-                                                "Ya existe una persona con el documento: " + personRequestDto.getDocumentNumber()));
+                                                "Ya existe una persona con el documento: "
+                                                        + personRequestDto.getDocumentNumber()));
                                     }
                                     return Mono.just(existingPerson);
                                 });
@@ -148,14 +165,15 @@ public class PersonServiceImpl implements PersonService {
                 })
                 .flatMap(existingPerson -> {
                     // Verificar email si cambió
-                    if (personRequestDto.getPersonalEmail() != null && 
-                        !personRequestDto.getPersonalEmail().equals(existingPerson.getPersonalEmail())) {
-                        
+                    if (personRequestDto.getPersonalEmail() != null &&
+                            !personRequestDto.getPersonalEmail().equals(existingPerson.getPersonalEmail())) {
+
                         return personRepository.existsByEmailAndIdNot(personRequestDto.getPersonalEmail(), id)
                                 .flatMap(exists -> {
                                     if (exists) {
                                         return Mono.error(new DuplicateResourceException(
-                                                "Ya existe una persona con el email: " + personRequestDto.getPersonalEmail()));
+                                                "Ya existe una persona con el email: "
+                                                        + personRequestDto.getPersonalEmail()));
                                     }
                                     return Mono.just(existingPerson);
                                 });
@@ -176,43 +194,64 @@ public class PersonServiceImpl implements PersonService {
                             .workPhone(personRequestDto.getWorkPhone())
                             .personalEmail(personRequestDto.getPersonalEmail())
                             .address(personRequestDto.getAddress())
+                            .status(existingPerson.getStatus())
                             .createdAt(existingPerson.getCreatedAt())
                             .updatedAt(LocalDateTime.now())
                             .build();
-                    
+
                     return personRepository.save(updatedPerson);
                 })
                 .map(this::mapToResponseDto);
     }
-    
+
     @Override
-    public Mono<Void> deletePerson(UUID id) {
-        log.info("Eliminando persona con ID: {}", id);
+    public Mono<PersonResponseDto> deletePerson(UUID id) {
+        log.info("Eliminando persona (borrado lógico) con ID: {}", id);
         return personRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Persona no encontrada con ID: " + id)))
-                .flatMap(person -> personRepository.deleteById(id));
+                .flatMap(person -> {
+                    person.setStatus(false);
+                    person.setUpdatedAt(LocalDateTime.now());
+                    return personRepository.save(person);
+                })
+                .map(this::mapToResponseDto)
+                .doOnSuccess(p -> log.info("Persona eliminada (status=false) con ID: {}", id));
     }
-    
+
+    @Override
+    public Mono<PersonResponseDto> restorePerson(UUID id) {
+        log.info("Restaurando persona con ID: {}", id);
+        return personRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Persona no encontrada con ID: " + id)))
+                .flatMap(person -> {
+                    person.setStatus(true);
+                    person.setUpdatedAt(LocalDateTime.now());
+                    return personRepository.save(person);
+                })
+                .map(this::mapToResponseDto)
+                .doOnSuccess(p -> log.info("Persona restaurada (status=true) con ID: {}", id));
+    }
+
     @Override
     public Mono<Boolean> existsByDocument(Integer documentTypeId, String documentNumber) {
         return personRepository.existsByDocumentTypeIdAndDocumentNumber(documentTypeId, documentNumber);
     }
-    
+
     @Override
     public Mono<Boolean> existsByEmail(String email) {
         return personRepository.existsByPersonalEmail(email);
     }
-    
+
     @Override
     public Mono<Long> countByGender(String gender) {
         return personRepository.countByGender(gender);
     }
-    
+
     @Override
     public Mono<Double> getAverageAge() {
         return personRepository.getAverageAge();
     }
-    
+
     /**
      * Crear entidad Person desde DTO
      */
@@ -230,11 +269,12 @@ public class PersonServiceImpl implements PersonService {
                 .workPhone(dto.getWorkPhone())
                 .personalEmail(dto.getPersonalEmail())
                 .address(dto.getAddress())
+                .status(true)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build());
     }
-    
+
     /**
      * Mapea una entidad Person a PersonResponseDto
      */
@@ -254,26 +294,27 @@ public class PersonServiceImpl implements PersonService {
                 .workPhone(person.getWorkPhone())
                 .personalEmail(person.getPersonalEmail())
                 .address(person.getAddress())
+                .status(person.getStatus())
                 .createdAt(person.getCreatedAt())
                 .updatedAt(person.getUpdatedAt())
                 .build();
     }
-    
+
     /**
      * Construir nombre completo
      */
     private String buildFullName(Person person) {
         StringBuilder fullName = new StringBuilder();
         fullName.append(person.getFirstName());
-        
+
         if (person.getMiddleName() != null && !person.getMiddleName().trim().isEmpty()) {
             fullName.append(" ").append(person.getMiddleName());
         }
-        
+
         fullName.append(" ").append(person.getLastName());
         return fullName.toString();
     }
-    
+
     /**
      * Calcular edad
      */
